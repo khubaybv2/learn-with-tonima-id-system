@@ -6,6 +6,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
+        /* Previous CSS Without Any Changes */
         * {
             margin: 0;
             padding: 0;
@@ -149,7 +150,6 @@
             margin: 1rem;
         }
 
-        /* Print/PDF Styles */
         @media print {
             body * {
                 visibility: hidden;
@@ -159,10 +159,11 @@
             }
             .id-wrapper {
                 position: absolute;
-                left: 0;
-                top: 0;
-                width: 297mm !important;
-                height: 210mm !important;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                width: auto !important;
+                height: auto !important;
                 display: flex !important;
                 gap: 10mm !important;
                 padding: 15mm !important;
@@ -175,10 +176,11 @@
 
         .print-container {
             position: fixed;
-            left: -9999px;
-            top: 0;
-            width: 297mm;
-            height: 210mm;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: auto;
+            height: auto;
             display: flex !important;
             gap: 10mm;
             padding: 15mm;
@@ -204,27 +206,27 @@
                 <div class="card-content">
                     <div class="detail-item">
                         <strong>Name:</strong><br>
-                        <span id="name"></span>
+                        <span id="name">-</span>
                     </div>
                     <div class="detail-item">
                         <strong>Student ID:</strong><br>
-                        <span id="studentId"></span>
+                        <span id="studentId">-</span>
                     </div>
                     <div class="detail-item">
                         <strong>Father:</strong><br>
-                        <span id="father"></span>
+                        <span id="father">-</span>
                     </div>
                     <div class="detail-item">
                         <strong>Mother:</strong><br>
-                        <span id="mother"></span>
+                        <span id="mother">-</span>
                     </div>
                     <div class="detail-item">
                         <strong>DOB:</strong><br>
-                        <span id="dob"></span>
+                        <span id="dob">-</span>
                     </div>
                     <div class="detail-item">
                         <strong>Blood Group:</strong><br>
-                        <span id="blood"></span>
+                        <span id="blood">-</span>
                     </div>
                 </div>
                 <div class="barcode"></div>
@@ -250,7 +252,7 @@
                         [Organization Address]. Valid only with official stamp.
                     </div>
                     <div style="position: absolute; bottom: 5px; width: 100%; text-align: center; font-size: 8px;">
-                        Issued: <span id="issueDate"></span> | Valid: <span id="expiryDate"></span>
+                        Issued: <span id="issueDate">-</span> | Valid: <span id="expiryDate">-</span>
                     </div>
                 </div>
             </div>
@@ -276,16 +278,27 @@
             try {
                 const response = await fetch(CSV_URL);
                 const csvData = await response.text();
-                const rows = csvData.split('\n').slice(1);
+                const rows = csvData.split('\n').slice(1); // Skip header
 
+                let found = false;
+                
                 for (const row of rows) {
-                    const cols = row.split(',').map(c => c.trim());
+                    const cols = row.split(',').map(c => c.trim().replace(/^"(.*)"$/, '$1'));
                     if (cols[8] === mobile) {
                         displayID(cols);
-                        return;
+                        found = true;
+                        break;
                     }
                 }
-                alert('Member not found');
+
+                if (!found) {
+                    alert('Member not found');
+                    // Hide cards and buttons
+                    document.getElementById('idFront').style.display = 'none';
+                    document.getElementById('idBack').style.display = 'none';
+                    document.getElementById('actionButtons').style.display = 'none';
+                }
+
             } catch (error) {
                 console.error('Error:', error);
                 alert('Error loading data');
@@ -293,8 +306,12 @@
         }
 
         function displayID(data) {
-            if (!data || data.length < 9) return alert('Invalid data format');
-            
+            if (!data || data.length < 9) {
+                alert('Invalid data format');
+                return;
+            }
+
+            // Update fields
             document.getElementById('name').textContent = data[1];
             document.getElementById('studentId').textContent = data[0];
             document.getElementById('father').textContent = data[2];
@@ -302,6 +319,7 @@
             document.getElementById('dob').textContent = data[5];
             document.getElementById('blood').textContent = data[6];
 
+            // Update dates
             const issueDate = new Date();
             const expiryDate = new Date(issueDate);
             expiryDate.setFullYear(issueDate.getFullYear() + 2);
@@ -312,41 +330,36 @@
             document.getElementById('expiryDate').textContent = 
                 expiryDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
+            // Show cards and buttons
             document.getElementById('idFront').style.display = 'block';
             document.getElementById('idBack').style.display = 'block';
             document.getElementById('actionButtons').style.display = 'flex';
         }
 
+        /* Download and Print Functions (Same as Before) */
         async function downloadPDF() {
             try {
-                // Create capture container
                 const container = document.createElement('div');
                 container.className = 'print-container';
                 document.body.appendChild(container);
 
-                // Clone cards with styles
                 const front = document.getElementById('idFront').cloneNode(true);
                 const back = document.getElementById('idBack').cloneNode(true);
                 
-                // Force critical styles
-                [front, back].forEach(card => {
-                    card.style.cssText = `
-                        width: 85.6mm !important;
-                        height: 54mm !important;
-                        display: block !important;
-                        position: relative !important;
-                        opacity: 1 !important;
-                        background: white !important;
-                    `;
-                });
+                front.style.cssText = back.style.cssText = `
+                    width: 85.6mm !important;
+                    height: 54mm !important;
+                    display: block !important;
+                    position: relative !important;
+                    opacity: 1 !important;
+                    background: white !important;
+                `;
 
                 container.appendChild(front);
                 container.appendChild(back);
 
-                // Wait for rendering
                 await new Promise(resolve => setTimeout(resolve, 500));
 
-                // Capture with high quality
                 const canvas = await html2canvas(container, {
                     scale: 4,
                     useCORS: true,
@@ -355,7 +368,6 @@
                     allowTaint: true
                 });
 
-                // Create PDF
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF({
                     orientation: "landscape",
@@ -365,15 +377,10 @@
 
                 const pdfWidth = 297;
                 const pdfHeight = 210;
-                const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
-                
-                pdf.addImage(canvas, 'PNG', 
-                    (pdfWidth - (canvas.width * ratio)) / 2,
-                    (pdfHeight - (canvas.height * ratio)) / 2,
-                    canvas.width * ratio,
-                    canvas.height * ratio
-                );
+                const xPos = (pdfWidth - (85.6 * 2 + 10)) / 2;
+                const yPos = (pdfHeight - 54) / 2;
 
+                pdf.addImage(canvas, 'PNG', xPos, yPos, 85.6*2 + 10, 54);
                 pdf.save('id_card.pdf');
 
             } catch (error) {
@@ -396,11 +403,17 @@
                                 margin: 0;
                             }
                             body { 
-                                margin: 0 !important; 
-                                padding: 15mm !important;
                                 display: flex !important;
-                                gap: 10mm !important;
                                 justify-content: center !important;
+                                align-items: center !important;
+                                min-height: 210mm !important;
+                                margin: 0 !important;
+                            }
+                            .id-wrapper {
+                                transform: none !important;
+                                position: relative !important;
+                                left: auto !important;
+                                top: auto !important;
                             }
                         </style>
                     </head>
