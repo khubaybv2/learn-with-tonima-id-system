@@ -6,7 +6,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        /* Previous CSS Without Any Changes */
         * {
             margin: 0;
             padding: 0;
@@ -69,6 +68,10 @@
             border-radius: 5px;
             box-shadow: 0 10px 20px rgba(0,0,0,0.1);
             display: none;
+        }
+
+        .id-card.show-card {
+            display: block !important;
         }
 
         .id-front, .id-back {
@@ -278,7 +281,7 @@
             try {
                 const response = await fetch(CSV_URL);
                 const csvData = await response.text();
-                const rows = csvData.split('\n').slice(1); // Skip header
+                const rows = csvData.split('\n').slice(1);
 
                 let found = false;
                 
@@ -293,9 +296,8 @@
 
                 if (!found) {
                     alert('Member not found');
-                    // Hide cards and buttons
-                    document.getElementById('idFront').style.display = 'none';
-                    document.getElementById('idBack').style.display = 'none';
+                    document.getElementById('idFront').classList.remove('show-card');
+                    document.getElementById('idBack').classList.remove('show-card');
                     document.getElementById('actionButtons').style.display = 'none';
                 }
 
@@ -331,12 +333,11 @@
                 expiryDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
             // Show cards and buttons
-            document.getElementById('idFront').style.display = 'block';
-            document.getElementById('idBack').style.display = 'block';
+            document.getElementById('idFront').classList.add('show-card');
+            document.getElementById('idBack').classList.add('show-card');
             document.getElementById('actionButtons').style.display = 'flex';
         }
 
-        /* Download and Print Functions (Same as Before) */
         async function downloadPDF() {
             try {
                 const container = document.createElement('div');
@@ -346,22 +347,24 @@
                 const front = document.getElementById('idFront').cloneNode(true);
                 const back = document.getElementById('idBack').cloneNode(true);
                 
-                front.style.cssText = back.style.cssText = `
-                    width: 85.6mm !important;
-                    height: 54mm !important;
-                    display: block !important;
-                    position: relative !important;
-                    opacity: 1 !important;
-                    background: white !important;
-                `;
+                [front, back].forEach(card => {
+                    card.style.cssText = `
+                        width: 85.6mm !important;
+                        height: 54mm !important;
+                        display: block !important;
+                        position: relative !important;
+                        opacity: 1 !important;
+                        background: white !important;
+                    `;
+                });
 
                 container.appendChild(front);
                 container.appendChild(back);
 
-                await new Promise(resolve => setTimeout(resolve, 500));
+                await new Promise(resolve => setTimeout(resolve, 1000));
 
                 const canvas = await html2canvas(container, {
-                    scale: 4,
+                    scale: 5, // High resolution
                     useCORS: true,
                     logging: true,
                     backgroundColor: '#FFFFFF',
@@ -377,10 +380,17 @@
 
                 const pdfWidth = 297;
                 const pdfHeight = 210;
-                const xPos = (pdfWidth - (85.6 * 2 + 10)) / 2;
-                const yPos = (pdfHeight - 54) / 2;
+                const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
+                const imgWidth = canvas.width * ratio;
+                const imgHeight = canvas.height * ratio;
 
-                pdf.addImage(canvas, 'PNG', xPos, yPos, 85.6*2 + 10, 54);
+                pdf.addImage(canvas, 'PNG', 
+                    (pdfWidth - imgWidth) / 2, 
+                    (pdfHeight - imgHeight) / 2, 
+                    imgWidth, 
+                    imgHeight
+                );
+
                 pdf.save('id_card.pdf');
 
             } catch (error) {
@@ -403,11 +413,11 @@
                                 margin: 0;
                             }
                             body { 
+                                margin: 0 !important; 
+                                padding: 15mm !important;
                                 display: flex !important;
+                                gap: 10mm !important;
                                 justify-content: center !important;
-                                align-items: center !important;
-                                min-height: 210mm !important;
-                                margin: 0 !important;
                             }
                             .id-wrapper {
                                 transform: none !important;
