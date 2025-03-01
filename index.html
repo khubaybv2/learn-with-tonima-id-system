@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Learn With Tonima - ID System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .search-container {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            padding: 2rem;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .search-box {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        #searchInput {
+            padding: 12px 20px;
+            width: 300px;
+            border: none;
+            border-radius: 25px;
+            margin-right: 10px;
+            font-size: 16px;
+        }
+
+        .search-btn {
+            padding: 12px 30px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+        }
+
+        .id-wrapper {
+            margin: 2rem;
+            display: flex;
+            gap: 10mm;
+            justify-content: center;
+        }
+
+        .id-card {
+            width: 85.6mm;
+            height: 54mm;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .id-front, .id-back {
+            padding: 10px;
+            height: 100%;
+        }
+
+        .card-header {
+            background: #2c3e50 !important;
+            color: white !important;
+            padding: 8px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+
+        .card-content {
+            padding: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            height: calc(100% - 40px);
+        }
+
+        .detail-item {
+            font-size: 10px;
+            line-height: 1.4;
+            color: #2c3e50 !important;
+        }
+
+        .barcode {
+            height: 20px;
+            background: repeating-linear-gradient(90deg, #000 0 2px, transparent 2px 5px);
+            margin: 5px;
+        }
+
+        .back-content {
+            padding: 10px;
+            height: calc(100% - 30px);
+            position: relative;
+        }
+
+        .platform-info {
+            font-size: 8px;
+            line-height: 1.4;
+            margin: 5px 0;
+            color: #2c3e50 !important;
+        }
+
+        .signature-box {
+            border-top: 1px solid #000;
+            width: 60%;
+            margin: 10px auto;
+            padding-top: 5px;
+            text-align: center;
+        }
+
+        .terms {
+            font-size: 6px;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .action-btns {
+            margin: 1rem;
+            display: none;
+            gap: 1rem;
+        }
+
+        .action-btn {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .footer-credit {
+            text-align: center;
+            color: #7f8c8d;
+            margin: 1rem;
+        }
+
+        /* Print/PDF Styles */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .id-card, .id-card * {
+                visibility: visible !important;
+            }
+            .id-wrapper {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 297mm !important;
+                height: 210mm !important;
+                display: flex !important;
+                gap: 10mm !important;
+                padding: 15mm !important;
+            }
+            .id-card {
+                box-shadow: none !important;
+                page-break-inside: avoid;
+            }
+        }
+
+        .print-container {
+            position: fixed;
+            left: -9999px;
+            top: 0;
+            width: 297mm;
+            height: 210mm;
+            display: flex !important;
+            gap: 10mm;
+            padding: 15mm;
+            background: white !important;
+            z-index: 99999;
+        }
+    </style>
+</head>
+<body>
+    <div class="search-container">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Enter Mobile Number">
+            <button class="search-btn" onclick="searchMember()">Search</button>
+        </div>
+    </div>
+
+    <div class="id-wrapper">
+        <div class="id-card" id="idFront">
+            <div class="id-front">
+                <div class="card-header">
+                    Learn With Tonima - Member ID
+                </div>
+                <div class="card-content">
+                    <div class="detail-item">
+                        <strong>Name:</strong><br>
+                        <span id="name"></span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Student ID:</strong><br>
+                        <span id="studentId"></span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Father:</strong><br>
+                        <span id="father"></span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Mother:</strong><br>
+                        <span id="mother"></span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>DOB:</strong><br>
+                        <span id="dob"></span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>Blood Group:</strong><br>
+                        <span id="blood"></span>
+                    </div>
+                </div>
+                <div class="barcode"></div>
+            </div>
+        </div>
+
+        <div class="id-card" id="idBack">
+            <div class="id-back">
+                <div class="card-header">
+                    Authorized Information
+                </div>
+                <div class="back-content">
+                    <div class="platform-info">
+                        Learn With Tonima is an educational platform founded by Nusrat Jahan Tonima, 
+                        providing free learning resources and mentorship to students nationwide.
+                    </div>
+                    <div class="signature-box">
+                        <span style="font-family: cursive; font-size: 10px;">Nusrat Jahan Tonima</span><br>
+                        <span style="font-size: 8px;">Authorized Signature</span>
+                    </div>
+                    <div class="terms">
+                        This card remains property of Learn With Tonima. If found, please return to:
+                        [Organization Address]. Valid only with official stamp.
+                    </div>
+                    <div style="position: absolute; bottom: 5px; width: 100%; text-align: center; font-size: 8px;">
+                        Issued: <span id="issueDate"></span> | Valid: <span id="expiryDate"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="action-btns" id="actionButtons">
+        <button class="action-btn" style="background: #27ae60; color: white;" onclick="printID()">Print ID</button>
+        <button class="action-btn" style="background: #2980b9; color: white;" onclick="downloadPDF()">Download PDF</button>
+    </div>
+
+    <div class="footer-credit">
+        Powered ⚡ by Khubayb Hossain
+    </div>
+
+    <script>
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRABHxakLgRtHA5t-9us_ZMZOk8DZtPMmfGY88Zq4i0WUMWVHEwrlUzK246sKiUZon78SAWKBLyy6BA/pub?output=csv';
+
+        async function searchMember() {
+            const mobile = document.getElementById('searchInput').value.trim();
+            if (!mobile) return alert('Please enter mobile number');
+
+            try {
+                const response = await fetch(CSV_URL);
+                const csvData = await response.text();
+                const rows = csvData.split('\n').slice(1);
+
+                for (const row of rows) {
+                    const cols = row.split(',').map(c => c.trim());
+                    if (cols[8] === mobile) {
+                        displayID(cols);
+                        return;
+                    }
+                }
+                alert('Member not found');
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error loading data');
+            }
+        }
+
+        function displayID(data) {
+            if (!data || data.length < 9) return alert('Invalid data format');
+            
+            document.getElementById('name').textContent = data[1];
+            document.getElementById('studentId').textContent = data[0];
+            document.getElementById('father').textContent = data[2];
+            document.getElementById('mother').textContent = data[3];
+            document.getElementById('dob').textContent = data[5];
+            document.getElementById('blood').textContent = data[6];
+
+            const issueDate = new Date();
+            const expiryDate = new Date(issueDate);
+            expiryDate.setFullYear(issueDate.getFullYear() + 2);
+
+            document.getElementById('issueDate').textContent = 
+                issueDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            
+            document.getElementById('expiryDate').textContent = 
+                expiryDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+            document.getElementById('idFront').style.display = 'block';
+            document.getElementById('idBack').style.display = 'block';
+            document.getElementById('actionButtons').style.display = 'flex';
+        }
+
+        async function downloadPDF() {
+            try {
+                // Create capture container
+                const container = document.createElement('div');
+                container.className = 'print-container';
+                document.body.appendChild(container);
+
+                // Clone cards with styles
+                const front = document.getElementById('idFront').cloneNode(true);
+                const back = document.getElementById('idBack').cloneNode(true);
+                
+                // Force critical styles
+                [front, back].forEach(card => {
+                    card.style.cssText = `
+                        width: 85.6mm !important;
+                        height: 54mm !important;
+                        display: block !important;
+                        position: relative !important;
+                        opacity: 1 !important;
+                        background: white !important;
+                    `;
+                });
+
+                container.appendChild(front);
+                container.appendChild(back);
+
+                // Wait for rendering
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Capture with high quality
+                const canvas = await html2canvas(container, {
+                    scale: 4,
+                    useCORS: true,
+                    logging: true,
+                    backgroundColor: '#FFFFFF',
+                    allowTaint: true
+                });
+
+                // Create PDF
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: "landscape",
+                    unit: "mm",
+                    format: "a4"
+                });
+
+                const pdfWidth = 297;
+                const pdfHeight = 210;
+                const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
+                
+                pdf.addImage(canvas, 'PNG', 
+                    (pdfWidth - (canvas.width * ratio)) / 2,
+                    (pdfHeight - (canvas.height * ratio)) / 2,
+                    canvas.width * ratio,
+                    canvas.height * ratio
+                );
+
+                pdf.save('id_card.pdf');
+
+            } catch (error) {
+                console.error('PDF Error:', error);
+                alert('PDF generation failed: ' + error.message);
+            } finally {
+                document.querySelector('.print-container')?.remove();
+            }
+        }
+
+        function printID() {
+            const printContent = `
+                <html>
+                    <head>
+                        <title>Print ID</title>
+                        <style>
+                            ${document.querySelector('style').innerHTML}
+                            @page { 
+                                size: A4 landscape; 
+                                margin: 0;
+                            }
+                            body { 
+                                margin: 0 !important; 
+                                padding: 15mm !important;
+                                display: flex !important;
+                                gap: 10mm !important;
+                                justify-content: center !important;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${document.getElementById('idFront').outerHTML}
+                        ${document.getElementById('idBack').outerHTML}
+                    </body>
+                </html>
+            `;
+
+            const printWin = window.open('', '_blank');
+            printWin.document.write(printContent);
+            printWin.document.close();
+            
+            printWin.onload = () => {
+                printWin.focus();
+                printWin.print();
+                printWin.close();
+            };
+        }
+    </script>
+</body>
+</html>
